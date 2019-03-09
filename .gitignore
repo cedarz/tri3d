@@ -9,6 +9,10 @@
 *.o
 *.obj
 
+# vs output
+Debug/
+x64/
+
 # Precompiled Headers
 *.gch
 *.pch
