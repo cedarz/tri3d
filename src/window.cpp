@@ -49,7 +49,7 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 	hwnd_ = CreateWindow(cls_name, __TEXT("tri3D"), style, CW_USEDEFAULT, CW_USEDEFAULT, width_, height_, NULL, NULL, hInstance, NULL);
 
 	// bitmapinfo
-	BITMAPINFO bmap;
+	BITMAPINFO bmap = {0};
 	bmap.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
 	bmap.bmiHeader.biWidth = width_;
 	bmap.bmiHeader.biHeight = -height_;
@@ -69,11 +69,13 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 	HBITMAP screen_bmap_ = CreateDIBSection(screen_dc_, &bmap, DIB_RGB_COLORS, &ptr, 0, 0);
 
 	HBITMAP screen_oldbmap = (HBITMAP)SelectObject(screen_dc_, screen_bmap_);
-	frame_buffer_ = (unsigned char *)ptr;
-	//memset(frame_buffer_, 0, width_ * height_ * 4);
+	frame_buffer_ = (unsigned int *)ptr;
+	memset(frame_buffer_, 0, width_ * height_ * 4);
 
 	SetForegroundWindow(hwnd_);
 	ShowWindow(hwnd_, SW_SHOWNORMAL);
+
+	render_ = std::make_shared<Renderer>(width_, height_, frame_buffer_);
 }
 
 void Window::SetWindowCaption(const wchar_t * text)
@@ -98,7 +100,19 @@ void Window::MainLoop() {
 			if (cur_time - pre_time > 30) {
 				pre_time = cur_time;
 				// render here?
+				Render();
+				Update();
 			}
 		}
 	}
+}
+
+void Window::Update() {
+	HDC hdc = GetDC(hwnd_);
+	BitBlt(hdc, 0, 0, width_, height_, screen_dc_, 0, 0, SRCCOPY);
+	ReleaseDC(hwnd_, hdc);
+}
+
+void Window::Render() {
+	render_->render(frame_buffer_);
 }

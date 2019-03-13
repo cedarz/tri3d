@@ -3,8 +3,9 @@
 #include <iostream>
 
 
+
 int main() {
-	Window window(768, 512);
+	Window window(600, 600);
 	window.MainLoop();
 	return 0;
 }
