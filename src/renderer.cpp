@@ -15,13 +15,13 @@ void Renderer::render(unsigned int * fb) {
 	for (int h = 0; h < (std::min)(screen_height_, tex_h); ++h) {
 		for (int w = 0; w < (std::min)(screen_width_, tex_w); ++w) {
 				//fb[h * screen_width_ * 4 + w * 4 +byte] = 255;
-				unsigned int r = (*frame_)[h * screen_width_ * 4 + w * 4 + 0];
-				unsigned int g = (*frame_)[h * screen_width_ * 4 + w * 4 + 1];
-				unsigned int b = (*frame_)[h * screen_width_ * 4 + w * 4 + 2];
-				unsigned int a = (*frame_)[h * screen_width_ * 4 + w * 4 + 3];
+				unsigned int r = (*frame_)[h * tex_w * 4 + w * 4 + 0];
+				unsigned int g = (*frame_)[h * tex_w * 4 + w * 4 + 1];
+				unsigned int b = (*frame_)[h * tex_w * 4 + w * 4 + 2];
+				unsigned int a = (*frame_)[h * tex_w * 4 + w * 4 + 3];
 				unsigned int color = (a << 24) | (r << 16) | (g << 8) | (b);
 				//std::cout << int(pixel) << std::endl;
-				if(w > 384) color = 0;
+				//if(w > 384) color = 0;
 				fb[h * screen_width_ + w] = color;
 			
 		}

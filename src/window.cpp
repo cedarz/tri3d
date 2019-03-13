@@ -21,21 +21,20 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 	// Register Class
 	//{ CS_BYTEALIGNCLIENT, (WNDPROC)screen_events, 0, 0, 0,
 	//	NULL, NULL, NULL, NULL, _T("SCREEN3.1415926") };
-	WNDCLASSEX wcex;
-	wcex.cbSize			= sizeof(WNDCLASSEX);
-	wcex.style			= CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc	= WndProc;
-	wcex.cbClsExtra		= 0;
-	wcex.cbWndExtra		= 0;
-	wcex.hInstance		= hInstance;
-	wcex.hIcon			= NULL;
-	wcex.hCursor		= 0; // LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground	= (HBRUSH)GetStockObject(BLACK_BRUSH); //(HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszMenuName	= 0;
-	wcex.lpszClassName	= cls_name;
-	wcex.hIconSm		= 0;
+	WNDCLASS wc;
+	wc.style			= CS_BYTEALIGNCLIENT | CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc		= WndProc;
+	wc.cbClsExtra		= 0;
+	wc.cbWndExtra		= 0;
+	wc.hInstance		= hInstance;
+	wc.hIcon			= NULL;
+	wc.hCursor		= LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground	= (HBRUSH)GetStockObject(BLACK_BRUSH); //(HBRUSH)(COLOR_WINDOW + 1);
+	wc.lpszMenuName	= 0;
+	wc.lpszClassName	= cls_name;
 
-	RegisterClassEx(&wcex);
+
+	RegisterClass(&wc);
 	RECT clientSize; //{0, 0, width_, height_};
 	clientSize.top = 0;
 	clientSize.left = 0;
@@ -46,7 +45,12 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 	if (!full_screen_) {
 		style = WS_SYSMENU | WS_BORDER | WS_CAPTION | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
 	}
-	hwnd_ = CreateWindow(cls_name, __TEXT("tri3D"), style, CW_USEDEFAULT, CW_USEDEFAULT, width_, height_, NULL, NULL, hInstance, NULL);
+	hwnd_ = CreateWindow(cls_name, __TEXT("tri3D"), style, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, NULL, NULL, hInstance, NULL);
+
+	HDC hdc = GetDC(hwnd_);
+	screen_dc_ = CreateCompatibleDC(hdc);
+	// https://stackoverflow.com/questions/29433674/why-releasedc
+	ReleaseDC(hwnd_, hdc);
 
 	// bitmapinfo
 	BITMAPINFO bmap = {0};
@@ -55,22 +59,29 @@ Window::Window(int width, int height) : width_(width), height_(height) {
 	bmap.bmiHeader.biHeight = -height_;
 	bmap.bmiHeader.biPlanes = 1;
 	bmap.bmiHeader.biBitCount = 32;
+	bmap.bmiHeader.biCompression = BI_RGB;
 	bmap.bmiHeader.biSizeImage = width_ * height_ * 4;
 	bmap.bmiColors->rgbBlue = 0;
 	bmap.bmiColors->rgbGreen = 0;
 	bmap.bmiColors->rgbRed = 0;
 	bmap.bmiColors->rgbReserved = 0;
 
-	HDC hdc = GetDC(hwnd_);
-	screen_dc_ = CreateCompatibleDC(hdc);
-	// https://stackoverflow.com/questions/29433674/why-releasedc
-	ReleaseDC(hwnd_, hdc); 
 	LPVOID ptr;
 	HBITMAP screen_bmap_ = CreateDIBSection(screen_dc_, &bmap, DIB_RGB_COLORS, &ptr, 0, 0);
+	
 
 	HBITMAP screen_oldbmap = (HBITMAP)SelectObject(screen_dc_, screen_bmap_);
 	frame_buffer_ = (unsigned int *)ptr;
 	memset(frame_buffer_, 0, width_ * height_ * 4);
+
+	RECT rect{0, 0, width_, height_};
+	AdjustWindowRect(&rect, GetWindowLong(hwnd_, GWL_STYLE), 0);
+	int wx = rect.right - rect.left;
+	int wy = rect.bottom - rect.top;
+	int sx = (GetSystemMetrics(SM_CXSCREEN) - wx) / 2;
+	int sy = (GetSystemMetrics(SM_CYSCREEN) - wy) / 2;
+	if(sy < 0) sy = 0;
+	SetWindowPos(hwnd_, NULL, sx, sy, wx, wy, (SWP_NOCOPYBITS | SWP_NOZORDER | SWP_SHOWWINDOW));
 
 	SetForegroundWindow(hwnd_);
 	ShowWindow(hwnd_, SW_SHOWNORMAL);
